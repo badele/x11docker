@@ -13,6 +13,7 @@ Version="3.8.1"
 
 changelog() {
 # 10.12.2017 V3.8.1     bugfix Ubuntu: avoid Wayland backend for Weston due to MIR issue #19
+#                       --xorg: change Xorg to X. X is setuid wrapper for Xorg on Ubuntu 14.04
 # 04.12.2017 V3.8.0     --sudouser: create user with docker run options instead of createuser script
 #                       --sudouser: create /etc/sudoers.d/$Benutzer with docker exec in dockerrc
 # 03.12.2017            --sudouser: create /etc/sudoers.d/$Benutzer instead of adding groups wheel and sudo
@@ -2528,7 +2529,7 @@ $(tail "$Compositorlogfile")"
       Xserveroptions="$Xserveroptions \\
   -verbose"                  # make X verbose
       [ "$Tty" = "yes" ] && Xserveroptions="$Xserveroptions -keeptty"
-      Xcommand="$(command -v Xorg) $Newdisplay $Newxvt \\
+      Xcommand="$(command -v X) $Newdisplay $Newxvt \\
   $Xserveroptions"
       warning "Although x11docker starts Xorg as unprivileged user,
   most system setups wrap Xorg to give it root permissions (setuid).
