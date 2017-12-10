@@ -12,6 +12,7 @@
 Version="3.8.0"
 
 changelog() {
+# 10.12.2017 V3.8.1     bugfix Ubuntu: avoid Wayland backend for Weston due to MIR issue #19
 # 04.12.2017 V3.8.0     --sudouser: create user with docker run options instead of createuser script
 #                       --sudouser: create /etc/sudoers.d/$Benutzer with docker exec in dockerrc
 # 03.12.2017            --sudouser: create /etc/sudoers.d/$Benutzer instead of adding groups wheel and sudo
@@ -2498,7 +2499,9 @@ startup-animation=fade
 [keyboard]
 keymap_layout=$( [ "$Tty" = "yes" ] && cat /etc/default/keyboard | grep XKBLAYOUT | cut -d= -f2 | cut -d'"' -f2)
 " >> "$Westonini"
-      [ -n "$Hostwayland" ] &&  [ "$Xserver" != "--xpra-xwayland" ] && {
+      [ -n "$Hostwayland" ] &&  [ "$Xserver" != "--xpra-xwayland" ] && [ "$Hostsystem" != "debian" ] && {
+
+#      [ -n "$Hostwayland" ] &&  [ "$Xserver" != "--xpra-xwayland" ] && {
         Westonoutput="WL"
       } || {
         [ -n "$Hostdisplay" ] && Westonoutput="X"
@@ -2602,12 +2605,10 @@ $(tail "$Compositorlogfile")"
       echo "mode=$Screensize" >> $Westonini
       [ -n "$Customwestonini" ] && Westonini="$Customwestonini"
       Compositorcommand="weston --config='$Westonini' --socket=$Waylandsocket"
-      case $Tty in
-        yes) Compositorcommand="$Compositorcommand --backend=drm-backend.so" ;;
-        no)  
-          [ -n "$Hostwayland" ] && Compositorcommand="$Compositorcommand --backend=wayland-backend.so" 
-          [ -z "$Hostwayland" ] && [ -n "$Hostdisplay" ] && Compositorcommand="$Compositorcommand --backend=x11-backend.so" 
-        ;;
+      case $Westonoutput in
+        WL) Compositorcommand="$Compositorcommand --backend=wayland-backend.so" ;;
+        X)  Compositorcommand="$Compositorcommand --backend=x11-backend.so" ;;
+        *)  Compositorcommand="$Compositorcommand --backend=drm-backend.so" ;; 
       esac
     ;;
     
@@ -2630,15 +2631,12 @@ mode=$Screensize
       done
       [ -n "$Customwestonini" ] && Westonini="$Customwestonini"
       Compositorcommand="weston --socket=$Waylandsocket --config='$Westonini'"
-      [ "$Tty" = "yes" ] && Compositorcommand="$Compositorcommand --backend=drm-backend.so"
       [ "$Fullscreen" = "yes" ] && Compositorcommand="$Compositorcommand --fullscreen"
       [ "$Outputcount" = "1" ]  || Compositorcommand="$Compositorcommand --output-count=$Outputcount"
-      case $Tty in
-        yes) Compositorcommand="$Compositorcommand --backend=drm-backend.so" ;;
-        no)  
-          [ -n "$Hostwayland" ] && Compositorcommand="$Compositorcommand --backend=wayland-backend.so" 
-          [ -z "$Hostwayland" ] && [ -n "$Hostdisplay" ] && Compositorcommand="$Compositorcommand --backend=x11-backend.so" 
-        ;;
+      case $Westonoutput in
+        WL) Compositorcommand="$Compositorcommand --backend=wayland-backend.so" ;;
+        X)  Compositorcommand="$Compositorcommand --backend=x11-backend.so" ;;
+        *)  Compositorcommand="$Compositorcommand --backend=drm-backend.so" ;; 
       esac
     ;;
     
