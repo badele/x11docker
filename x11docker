@@ -9,7 +9,7 @@
 # Type 'x11docker --help' or scroll down to read usage information.
 # https://github.com/mviereck/x11docker
 
-Version="3.8.0"
+Version="3.8.1"
 
 changelog() {
 # 10.12.2017 V3.8.1     bugfix Ubuntu: avoid Wayland backend for Weston due to MIR issue #19
@@ -2499,9 +2499,7 @@ startup-animation=fade
 [keyboard]
 keymap_layout=$( [ "$Tty" = "yes" ] && cat /etc/default/keyboard | grep XKBLAYOUT | cut -d= -f2 | cut -d'"' -f2)
 " >> "$Westonini"
-      [ -n "$Hostwayland" ] &&  [ "$Xserver" != "--xpra-xwayland" ] && [ "$Hostsystem" != "debian" ] && {
-
-#      [ -n "$Hostwayland" ] &&  [ "$Xserver" != "--xpra-xwayland" ] && {
+      [ -n "$Hostwayland" ] &&  [ "$Xserver" != "--xpra-xwayland" ] && [ "$Hostsystem" != "ubuntu" ] && {
         Westonoutput="WL"
       } || {
         [ -n "$Hostdisplay" ] && Westonoutput="X"
