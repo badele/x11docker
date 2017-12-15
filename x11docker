@@ -9,11 +9,12 @@
 # Type 'x11docker --help' or scroll down to read usage information.
 # https://github.com/mviereck/x11docker
 
-Version="3.8.1"
+Version="3.9.0beta"
 
 changelog() {
-# 14.12.2017            re-checked capabilities for init systems and --dbus
+# 14.12.2017            re-checked capabilities for init systems
 #                       --systemd: set environment globally, especially DISPLAY for deepin is needed
+#                       --systemd: set xhost+SI:localuser:$Benutzer as XAUTHORITY seems to be ignored
 #                       --dbus: create /var/lib/dbus and /var/run/dbus with 775
 #                       --dbus: run daemon in dockerrc as user messagebus:root
 # 12.12.2017            /tmp/.ICE-unix created in dockerrc, root owned with 1777, needed for SESSION_MANAGER
@@ -27,7 +28,6 @@ changelog() {
 #                       --sharecgroup: new option to share /sys/fs/cgroup. default for --systemd.
 # 06.12.2017            create /var/lib/dbus in dockerrc to avoid dbus errors with init systems
 #                       show image name and display in weston windows
-#                       bugfix createuser.sh: shebang for sh instead of bash to support systems with sh only
 #                       bugfix --runit: add SYS_BOOT even with --cap-default
 # 04.12.2017 V3.8.0     --sudouser: create user with docker run options instead of createuser script
 #                       --sudouser: create /etc/sudoers.d/$Benutzer with docker exec in dockerrc
@@ -110,11 +110,11 @@ changelog() {
   : 
 }
 todo() {
+# --systemd: try to avoid xhost +SI:localuser:$Benutzer
 # check Xorg version for +iglx, check security implications, maybe option --iglx?
 # check --xwayland in Gnome 3 again (#19)
 # check failing xauth, see #1 in xfce-wine
 # GTK3 in Wayland: --dbus once worked with $Dbusdaemon=yes
-# trinity: preserve /opt in PATH with su in createuser
 # --wayland --user/--hostuser: wayland socket access denied
 # check all FIXME 
 # --nxagent 3.5.0: Mageia 6: seamless mode fails
@@ -3077,7 +3077,7 @@ done
     none) ;;
     tini) ;;
     systemd)
-      note "Option --systemd degrades container isolation.
+      warning "Option --systemd degrades container isolation.
   It allows some docker container capabilities (nearly like --cap-default).
   It shares access to host cgroups in /sys/fs/cgroup."
   
@@ -3140,7 +3140,7 @@ DefaultEnvironment=DISPLAY=$Newdisplay XAUTHORITY=$Xclientcookie HOME=$Benutzerh
     ;;
     
     runit)
-      note "Option --runit slightly degrades container isolation.
+      warning "Option --runit slightly degrades container isolation.
   Beside some default container capabilities x11docker would disable otherwise
   it adds capability SYS_BOOT."
   
@@ -3169,7 +3169,7 @@ DefaultEnvironment=DISPLAY=$Newdisplay XAUTHORITY=$Xclientcookie HOME=$Benutzerh
     ;;
     
     openrc)
-      note "Option --openrc slightly degrades container isolation.
+      warning "Option --openrc slightly degrades container isolation.
   Beside some default container capabilities x11docker would disable otherwise
   it adds capability SYS_BOOT."
       Openrcservice=$Cachefolder/x11docker.service && mkfile $Openrcservice
@@ -3618,7 +3618,7 @@ start() {
       }
 
       [ "$Benutzeruid" = "$Hostuseruid" ]   || echo "setfacl -m u:$Benutzeruid:r $Xclientcookie"  # read permissions for option --user
-      [ "$nsBenutzeruid" = "$Benutzeruid" ] || echo "chmod 644 $Xclientcookie"                    # read permissions for user namespace remapping
+      [ "$nsBenutzeruid" = "$Benutzeruid" ] || echo "chmod 444 $Xclientcookie"                    # read permissions for user namespace remapping
       
       [ "$Xserver" = "--hostdisplay" ] || {
         echo "verbose 'disabling any possible access to new X server possibly granted by xhost'"
@@ -3626,6 +3626,12 @@ start() {
         [ -n "$Xhost" ] && {
           echo "verbose 'custom xhost setting (option --xhost): $Xhost'"
           echo "$Xhost" 
+        }
+        [ "$Initsystem" = "systemd" ] && {
+          echo "note 'Allowing xhost access for $Benutzer with" 
+          echo "  xhost +SI:localuser:$Benutzer"
+          echo "to avoid systemd startup issues. (option --systemd)'"
+          echo "xhost +SI:localuser:$Benutzer"
         }
       }
       
@@ -3834,7 +3840,6 @@ After finish: $Logfile3"
       case $Verbosecolors in
         no)  tail --pid=$$ --retry -n +1 -F $Logfile 2>/dev/null >&3 & ;;
         yes) tail --pid=$$ --retry -n +1 -F $Logfile 2>/dev/null | sed "
-                                      /\(Failed to add fd to store\|Failed to set invocation ID\|Failed to reset devices.list\)/d;
                                       s/\(ERROR\|Error\|error\|FAILURE\)/${Esc}[41m\1${Esc}[0m/g;
                                       s/\(Failed\|failed\)/${Esc}[31m\1${Esc}[0m/g;
                                       s/\(WARNING\|Warning\|warning\)/${Esc}[33m\1${Esc}[0m/g;
@@ -3844,6 +3849,7 @@ After finish: $Logfile3"
                                       s/^x11docker/${Esc}[32m\0${Esc}[0m/ " >&3 & ;;
       esac
     }
+#                                      /\(Failed to add fd to store\|Failed to set invocation ID\|Failed to reset devices.list\)/d;
     # options --stdout, --stderr
     [ "$Showstdout" = "yes" ] && tail --pid=$$ --retry -n +1 -F $Cmdstdoutlogfile >&1 2>/dev/null &
     [ "$Showstderr" = "yes" ] && tail --pid=$$ --retry -n +1 -F $Cmdstderrlogfile >&4 2>/dev/null &
