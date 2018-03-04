@@ -4403,10 +4403,7 @@ $(tail $Compositorlogfile)"
 $(tail $Dockerlogfile)
 
   Last lines of xterm.log:
-$(cat  $Xtermlogfile | awk '!seen[$0]++' | sed '/container not ready/d' | tail)
-
-  Docker daemon messages:
-$(cat $Xtermlogfile | grep 'Error response from daemon')"
+$(cat  $Xtermlogfile | awk '!seen[$0]++' | sed '/container not ready/d' | tail)"
         }
         storepid $Containerpid container
         
