@@ -3824,7 +3824,7 @@ start() {
     echo "  although option --init is listed in \"docker run --help\"."
     echo "  This docker package issue is at least known for openSUSE."
     echo "  Use x11docker option --no-init to avoid this error.'"
-    echo "  exit 1"
+ #   echo "  exit 1"
     echo "}"
     echo ""
   }
