@@ -3827,7 +3827,7 @@ start() {
  #   echo "  exit 1"
  #   echo "}"
     echo ""
-  }
+ # }
 
   echo "read Containerid < <($Dockercommand)" # <- docker run is here!
   
